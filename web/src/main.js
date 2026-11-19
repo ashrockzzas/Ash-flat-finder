@@ -10,6 +10,8 @@ const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<
 const mobile = matchMedia('(max-width: 700px)').matches;
 const REPO = 'https://github.com/kairothq/flat-finder';
 const params = new URLSearchParams(location.search);
+const BASE = import.meta.env.BASE_URL; // '/' locally, '/<repo>/' on GitHub Pages
+const HOME = `${location.origin}${BASE}`;
 const store = { // localStorage can be missing or blocked: never let it break the page
   get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* ignore */ } },
@@ -34,18 +36,18 @@ let myList = [], allAmenities = [];
 const highlights = { glow: true, bounds: true, labels: true, ...store.get('ff-highlights', {}) };
 
 async function boot() {
-  const cities = await fetch('/data/cities.json').then((r) => r.json()).catch(() => ({ gurgaon: { name: 'Gurugram' } }));
-  cityId = cities[params.get('city')] ? params.get('city') : 'gurgaon';
+  const cities = await fetch(`${BASE}data/cities.json`).then((r) => r.json()).catch(() => ({ gurgaon: { name: 'Gurugram' } }));
+  cityId = cities[params.get('city')] && !cities[params.get('city')].app ? params.get('city') : 'gurgaon';
   const [city, shapes] = await Promise.all([
-    fetch(`/data/${cityId}.json`).then((r) => r.json()),
-    fetch(`/data/${cityId}-shapes.geojson`).then((r) => r.json()),
+    fetch(`${BASE}data/${cityId}.json`).then((r) => r.json()),
+    fetch(`${BASE}data/${cityId}-shapes.geojson`).then((r) => r.json()),
   ]);
   data = city;
   OVERVIEW.center = city.city.center;
   OVERVIEW.zoom = city.city.zoom || OVERVIEW.zoom;
   byId = new Map(city.societies.map((s) => [s.id, s]));
   $('city-pick').replaceChildren(...Object.entries(cities).map(([id, c]) => new Option(c.name, id, false, id === cityId)));
-  $('city-pick').onchange = () => { location.search = `?city=${$('city-pick').value}`; };
+  $('city-pick').onchange = () => { const id = $('city-pick').value; location.href = cities[id]?.app ? `${BASE}${cities[id].app}.html` : `${BASE}?city=${id}`; };
 
   const freq = new Map();
   for (const s of city.societies) for (const a of s.amenities) freq.set(a, (freq.get(a) || 0) + 1);
@@ -55,8 +57,8 @@ async function boot() {
   const c = city.counts, m = city.price_model || {}, rated = city.societies.filter((s) => s.rating).length;
   $('note').textContent = `${c.on_map.toLocaleString()} societies · ${(c.for_sale || 0).toLocaleString()} homes for sale, ${(c.for_rent || 0).toLocaleString()} for rent on Magicbricks · ${c.verified} verified from brochures and HRERA plans`;
   $('about-prices').innerHTML = `Prices and rents are medians of live Magicbricks listings. <b>⚠</b> marks a listing price our checks think is a typo (far from the same home nearby, or rent and price that cannot both be right): it is shown as listed but not used for filters. <b>~</b> marks our estimate: rent is about ${((m.city_yield || 0.025) * 100).toFixed(1)}% of the price per year here (measured on ${m.pairs || 0} society and BHK pairs, correlation ${m.log_price_rent_correlation ?? 'n/a'}). "Probably fits" uses a cautious bedroom size estimated from unit size (${city.room_model?.n || 0} verified unit types). Resident ratings exist for ${rated.toLocaleString()} societies.`;
-  $('dl-all').href = `/data/${cityId}-societies.csv`;
-  $('dl-units').href = `/data/${cityId}-units.csv`;
+  $('dl-all').href = `${BASE}data/${cityId}-societies.csv`;
+  $('dl-units').href = `${BASE}data/${cityId}-units.csv`;
   $('dl-results').onclick = exportResults;
 
   feed = createFeed($('feed'), $('log-mode'), { events: city.events, byId });
@@ -447,7 +449,7 @@ function renderCard(s) {
 
 let detailsPromise = null;
 function loadDetails() {
-  detailsPromise ||= fetch(`/data/${cityId}-details.json`).then((r) => r.json()).then((d) => (details = d)).catch(() => (details = {}));
+  detailsPromise ||= fetch(`${BASE}data/${cityId}-details.json`).then((r) => r.json()).then((d) => (details = d)).catch(() => (details = {}));
   return detailsPromise;
 }
 
@@ -524,7 +526,7 @@ function buildList() {
   };
   $('btn-share').onclick = async () => {
     if (!myList.length) { toast('Your list is empty.'); return; }
-    const url = `${location.origin}/?city=${cityId}&list=${myList.join(',')}`;
+    const url = `${HOME}?city=${cityId}&list=${myList.join(',')}`;
     try { await navigator.clipboard.writeText(url); toast('Link to your list copied.'); } catch { prompt('Copy this link', url); }
   };
   if (params.get('list') && myList.length) crit.only = [...myList];
@@ -544,7 +546,7 @@ function exportResults() {
   const rows = ranked().map((s) => {
     const p = priceFor(s, crit.mode, crit.bhk);
     return [s.name, s.locality, states.get(s.id), s.kind, p?.value, p ? p.estimated : '', s.sale_count, s.rent_count, s.score, s.rating, s.towers, s.units,
-      s.nearby?.park?.m, s.nearby?.metro?.m, s.url, s.gmaps, `${location.origin}/?city=${cityId}&open=${s.id}`];
+      s.nearby?.park?.m, s.nearby?.metro?.m, s.url, s.gmaps, `${HOME}?city=${cityId}&open=${s.id}`];
   });
   const blob = new Blob([[cols, ...rows].map((r) => r.map(q).join(',')).join('\n')], { type: 'text/csv' });
   const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: `flat-finder-${cityId}-${crit.mode}-results.csv` });
