@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+  <title>Flat Finder · Abu Dhabi</title>
+  <meta name="description" content="Residential buildings in Abu Dhabi on one map, with the rent listings you save, yearly rent in AED, and distance to malls, beaches and schools.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+</head>
+<body class="nolog">
+  <div id="map"></div>
+
+  <div class="topbar">
+    <button id="btn-theme" title="Light or dark" aria-label="Switch light or dark">Light</button>
+    <button id="btn-mhide" class="mobile-only" title="Show or hide the panel">Hide panel</button>
+  </div>
+
+  <div class="mtabs" id="mtabs"><button data-t="search" class="on">Search</button><button data-t="society" id="mt-society" disabled>Building</button><button class="collapse" id="m-collapse" aria-label="Collapse panel">⌄</button></div>
+
+  <aside class="panel left" id="filters">
+    <div class="k">Flat Finder · <select id="city-pick" aria-label="City"></select></div>
+    <h1 class="ttl">Find the flat that fits.</h1>
+    <div class="search">
+      <input id="q" type="search" placeholder="Search a building or area" autocomplete="off" aria-label="Search buildings and areas">
+      <ol id="q-results" hidden></ol>
+    </div>
+
+    <section class="mylist">
+      <div class="k row">My listings <span class="val" id="v-list">none yet</span></div>
+      <button class="primary" id="btn-add">+ Add a listing</button>
+      <p class="fine">Paste a Bayut or Property Finder link with its yearly rent, bedrooms and size. It is saved in this browser only.</p>
+    </section>
+
+    <section>
+      <div class="k">Bedrooms</div>
+      <div class="chips" id="f-beds"></div>
+    </section>
+    <section>
+      <div class="k row">Yearly rent, up to <span class="val" id="v-rent">Any</span></div>
+      <input type="range" id="f-rent" min="0" max="500000" step="5000" value="500000" aria-label="Highest yearly rent in AED">
+    </section>
+    <section>
+      <div class="k row">Size, at least <span class="val" id="v-size">Any</span></div>
+      <input type="range" id="f-size" min="0" max="4000" step="50" value="0" aria-label="Smallest size in square feet">
+    </section>
+    <section>
+      <div class="k">Nearby <span class="fine">(straight line)</span></div>
+      <div class="chips" id="f-near"></div>
+    </section>
+    <section>
+      <div class="k">Area</div>
+      <select id="f-area" aria-label="Area"><option value="">Any area</option></select>
+    </section>
+
+    <div class="count">
+      <div class="k">My listings that match</div>
+      <div class="n" id="count">0</div>
+      <div class="sub" id="count-sub"></div>
+    </div>
+    <div id="results"></div>
+
+    <div class="downloads">
+      <div class="k">My listings file</div>
+      <button class="dl" id="dl-csv"><svg viewBox="0 0 24 24"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 19h16"/></svg><span><b>Download as a spreadsheet</b><small>CSV of every listing you saved</small></span></button>
+      <button class="dl" id="dl-backup"><svg viewBox="0 0 24 24"><path d="M4 5h16M4 10h16M4 15h16M4 20h10"/></svg><span><b>Back up</b><small>Keep this file to move your listings to another phone or browser</small></span></button>
+      <label class="dl" id="dl-restore"><svg viewBox="0 0 24 24"><path d="M12 21V9m0 0-5 5m5-5 5 5M4 5h16"/></svg><span><b>Restore a backup</b><small>Adds listings from a backup file</small></span><input type="file" accept=".json,application/json" id="restore-file" hidden></label>
+    </div>
+    <p class="fine about" id="about"></p>
+  </aside>
+
+  <article class="card" id="card" hidden></article>
+
+  <div class="controls">
+    <div class="layers" id="layers">
+      <div class="layer-menu">
+        <button data-mode="night"><i class="sw-night"></i>Night</button>
+        <button data-mode="streets"><i class="sw-streets"></i>Dark map</button>
+        <button data-mode="light"><i class="sw-light"></i>Day map</button>
+      </div>
+      <button id="layers-btn" class="layers-btn" title="Map style" aria-label="Map style"><svg viewBox="0 0 24 24" width="16" height="16"><path d="m12 3 9 5-9 5-9-5z M3 13l9 5 9-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></button>
+    </div>
+    <button id="ctl-locate" title="Show my location" aria-label="Show my location"><svg viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="12" r="3.2" fill="currentColor"/><circle cx="12" cy="12" r="7" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3" stroke="currentColor" stroke-width="1.8"/></svg></button>
+    <button id="ctl-home" title="Show the whole city" aria-label="Show the whole city"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M4 10.5 12 4l8 6.5V20h-5.5v-5.5h-5V20H4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></button>
+    <button id="ctl-tilt" title="Switch between flat and 3D" aria-label="Switch between flat and 3D">2D</button>
+    <div class="zoom">
+      <button id="ctl-in" title="Zoom in" aria-label="Zoom in">+</button>
+      <button id="ctl-out" title="Zoom out" aria-label="Zoom out">−</button>
+    </div>
+  </div>
+
+  <div class="modal" id="add" hidden>
+    <form class="sheet" id="add-form" novalidate>
+      <h3 id="add-title">Add a listing</h3>
+      <label class="field">Link from Bayut or Property Finder <span class="fine">(optional)</span>
+        <input type="url" id="a-url" placeholder="https://www.bayut.com/property/..." autocomplete="off" inputmode="url"></label>
+      <div class="fine" id="a-url-hint"></div>
+      <label class="field">Rent per year, AED
+        <input type="text" id="a-rent" placeholder="85000" inputmode="decimal" autocomplete="off"></label>
+      <div class="field">Bedrooms <div class="chips" id="a-beds"></div></div>
+      <label class="field">Size, sq ft <span class="fine">(optional)</span>
+        <input type="text" id="a-sqft" placeholder="1200" inputmode="numeric" autocomplete="off"></label>
+      <label class="field">Building name or note <span class="fine">(optional)</span>
+        <input type="text" id="a-note" placeholder="e.g. Sun Tower, high floor, sea view" autocomplete="off"></label>
+      <div class="field">Where is it?
+        <div class="row-between"><span class="fine" id="a-where">Not chosen yet</span><button type="button" class="ghost" id="a-pick">Choose on map</button></div></div>
+      <div class="fine flag-note" id="a-problems"></div>
+      <div class="row-between"><button type="button" class="linkbtn" id="a-delete" hidden>Delete</button><span class="row-gap"><button type="button" class="ghost" id="a-cancel">Cancel</button><button type="submit" class="primary">Save</button></span></div>
+    </form>
+  </div>
+
+  <div class="picking" id="picking" hidden>Tap the building (or the spot) on the map · <button class="linkbtn" id="pick-cancel">Cancel</button></div>
+  <div class="toast" id="toast" hidden></div>
+  <div class="note" id="note"></div>
+  <script type="module" src="/src/abudhabi.js"></script>
+</body>
+</html>

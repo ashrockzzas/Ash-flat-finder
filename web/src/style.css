@@ -303,3 +303,13 @@ body.has-card .maplibregl-ctrl-bottom-right { right: calc(var(--right-w) + var(-
 
 .prices .flagged { color: var(--muted); text-decoration: line-through dotted; }
 .flag-note { color: var(--likely); }
+
+/* Abu Dhabi: add-a-listing form and map picking banner */
+.sheet .field { display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; }
+.sheet .field input { width: 100%; padding: 10px; font-size: 16px; } /* 16px stops phones zooming in */
+.sheet { max-height: calc(100dvh - 32px); overflow-y: auto; }
+#btn-add { width: 100%; padding: 11px; }
+#f-area { width: 100%; padding: 8px; }
+label.dl { cursor: pointer; }
+.picking { position: fixed; z-index: 15; left: 50%; top: 14px; transform: translateX(-50%); background: var(--glass-strong); border: 1px solid var(--accent);
+  padding: 10px 16px; border-radius: 20px; font-size: 13px; box-shadow: var(--shadow); white-space: nowrap; }

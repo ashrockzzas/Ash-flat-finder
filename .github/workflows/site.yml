@@ -1,0 +1,51 @@
+# Tests every pull request. On main: fetches Abu Dhabi from OpenStreetMap, builds the site and publishes it on GitHub Pages.
+name: Test and publish the site
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch: # "Run workflow" button: rebuild with fresh OpenStreetMap data
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: site-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: web/package-lock.json }
+      - name: Pipeline tests
+        run: pip install -q pytest && cd pipeline && pytest -q
+      - name: Web tests
+        run: cd web && npm ci && npx vitest run --root .. cli web/src
+      - name: Abu Dhabi from OpenStreetMap (three Overpass queries, no listing sites)
+        if: github.event_name != 'pull_request'
+        run: cd pipeline && python3 osm_city.py abudhabi --allow-empty
+      - name: Build the site
+        run: cd web && BASE_PATH="/${{ github.event.repository.name }}/" npm run build
+      - if: github.event_name != 'pull_request'
+        uses: actions/configure-pages@v5
+      - if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v3
+        with: { path: web/dist }
+
+  publish:
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4

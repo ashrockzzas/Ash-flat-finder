@@ -41,6 +41,8 @@ Explain the verdicts: **match** (every bedroom read and passes), **likely** (roo
 4. Run tests: `cd pipeline && uv run --with pytest pytest` and `cd web && npx vitest run --root .. cli web/src`.
 5. Open a pull request with the new data files. Do not commit `pipeline/cache/` or `osm_buildings.geojson`.
 
+**Cities with no portal data** (outside India, e.g. Abu Dhabi): set `"source": "osm"`, `currency` and `rent_period` in `data/cities.json` and run `python3 osm_city.py <city>` instead of steps 2-3. It builds buildings, areas and mall, beach and school distances from OpenStreetMap; rents come only from listings the user adds on the site. Test one page of any listing portal first and report blocks or captchas before writing a crawler.
+
 ## Job 2a: read every floor plan, brochure and HRERA filing with local OCR (free)
 
 On a Mac (uses the built-in Vision framework, no upload):

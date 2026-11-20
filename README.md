@@ -4,6 +4,16 @@ Every housing society in a city on one night map. Set the smallest bedroom you c
 
 Gurugram is first: about 2,700 projects from Magicbricks, building outlines from OpenStreetMap, and a set of societies verified by reading builder brochures and HRERA plans.
 
+## Abu Dhabi (default city)
+
+Opening the site goes to Abu Dhabi (`abudhabi.html`). Gurugram is still at `?city=gurgaon`.
+
+- **Buildings, areas, malls, beaches and schools** come from OpenStreetMap (`pipeline/osm_city.py abudhabi`): residential buildings, island, suburb and neighbourhood names (Al Reem, Saadiyat, Yas, Al Raha, Khalifa City, Mohammed Bin Zayed City and others, as OSM names them), and the straight-line distance from each building to the nearest mapped mall, beach and school edge. Abu Dhabi has no metro, so those three replace "metro distance".
+- **Rents come only from you.** "+ Add a listing" takes a Bayut or Property Finder link, the **yearly rent in AED**, bedrooms (studio to 4) and size in sq ft. Tap the building on the map to place it. Listings are saved in your browser only; use "Back up" to keep a copy or move them to another phone. A rent under AED 12,000 is refused as "looks monthly".
+- The site never opens Bayut or Property Finder. When this was set up, both could not be tested from the build machine (its network did not allow them), so there is no portal crawler for Abu Dhabi yet. Nothing is estimated: no rent, size or price is filled in for you.
+- The Mac-only OCR and Jev steps (Jobs 2a and 2b) are Gurugram-only and are not used for Abu Dhabi.
+- `.github/workflows/site.yml` runs the tests on every pull request. On `main` it fetches OpenStreetMap once (cached, three Overpass queries), builds the site and publishes it to GitHub Pages. "Run workflow" on the Actions tab rebuilds with fresh map data.
+
 ## What the colours mean
 
 - **Bright**: matches your search.
